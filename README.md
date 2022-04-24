@@ -35,7 +35,7 @@ pip install -r requirements.txt
 
 **To train our CNN network, we automatically created numerous structrual models and the associated data with distinct stratigraphic layers and faults, which were shown to be sufficient to train an excellent structural modeling network.** 
 
-**The synthetic structural models can be downloaded from [here](https://doi.org/10.5281/zenodo.4536561), while the input data are randomly generated in training the CNN.**
+**The synthetic structural models can be downloaded from [here](https://doi.org/10.5281/zenodo.6480165), and the input data are randomly generated in training.**
 
 ## Training
 
