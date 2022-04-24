@@ -10,7 +10,7 @@ Dekuan Change<sup>3</sup> and
 Xueshan Yong<sup>3</sup>.
 <sup>1</sup>University of Science and Technology of China; <sup>2</sup>China Aero Geophysical Survey and Remote Sensing Center for Natural Resources; <sup>3</sup>Research Institute of Petroleum Exploration \& Development-NorthWest(NWGI), PetroChina.
 
-### Requirments
+## Requirments
 
 ```
 python>=3.6
@@ -31,13 +31,13 @@ Install all dependent libraries:
 ```bash
 pip install -r requirements.txt
 ```
-### Dataset
+## Dataset
 
 **To train our CNN network, we automatically created numerous structrual models and the associated data with distinct stratigraphic layers and faults, which were shown to be sufficient to train an excellent structural modeling network.** 
 
 **The synthetic structural models can be downloaded from [here](https://doi.org/10.5281/zenodo.4536561), while the input data are randomly generated in training the CNN.**
 
-### Training
+## Training
 
 Run train.ipynb to start training a new DeepISMNet model by using the synthetic dataset.
 
