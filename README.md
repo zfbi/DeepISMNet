@@ -1,4 +1,4 @@
-# DeepSIMNet: using synthetic datasets to train an end-to-end Convolutional Neural Network for implicit structural modeling
+# DeepISMNet: using synthetic datasets to train an end-to-end Convolutional Neural Network for implicit structural modeling
 Three-Dimensional Implicit Structural Modeling Using Convolutional Neural Network
 
 **This is a [Pytorch](https://pytorch.org/) version of a deep learning method using a convolution neural network to predict a scalar field from sparse structural data associated with multiple distinct stratigraphic layers and faults.  
