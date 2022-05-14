@@ -25,7 +25,6 @@ def min_max_norm(x):
     return x
 
 def compute_hrzs_not_on_grid(fx, hms):          
-    # 计算非网格层位
     hrzs = []
     for hm in hms:
         fm = fx * hm
@@ -60,74 +59,6 @@ def cut_lins_for_each_hrz(lines):
 
 def compute_edist(p0, p1):
     return ((p0[0]-p1[0])**2 + (p0[1]-p1[1])**2)**0.5
-
-def pertb_fals(fals_z):
-    fals_new = []
-
-    for j,(i1z,shift_t,shift_b) in enumerate(fals_z):  
-        n = len(i1z)
-        
-        i1s,i2s = np.zeros(n),np.zeros(n)
-        rate = (random.uniform(shift_t[0],shift_b[0])-shift_t[0])/(shift_b[0]-shift_t[0])
-        
-        if random.random() > 0.5:
-            f = interp1d([0, n-1], 
-                         [shift_t[0] + rate * (shift_b[0]-shift_t[0]),
-                          (shift_b[n-1] + shift_t[n-1])/2 + ((shift_b[n-1]-shift_t[n-1])/2 - 
-                                                           rate * (shift_b[n-1]-shift_t[n-1]))], 
-                          kind='linear')
-            for i in range(n):
-                i2s[i] = f(i1z[i])
-                i1s[i] = i1z[i]  
-        else: 
-            for i in range(n):
-                i2s[i] = shift_t[i] + rate * (shift_b[i]-shift_t[i])
-                i1s[i] = i1z[i]
-                
-        fals_new.append((i1s,i2s))
-            
-    return fals_new
-
-def pertb_hrzs(hrzs_z):
-    hrzs_new = []
-    
-    if random.random() > 0.5:
-        sect = True
-    else:
-        sect = False
-    
-    if random.random() < 0.5:
-        big = True
-    else:
-        big = False
-        
-    for j,(i2z,shift_t,shift_b) in enumerate(hrzs_z):  
-        n = len(i2z)
-        
-        i1s,i2s = np.zeros(n),np.zeros(n)
-        
-        if sect:
-            if j == 0:
-                rate = (random.uniform(shift_t[0], shift_b[0])-shift_t[0]) / (shift_b[0]-shift_t[0])
-            f = interp1d([0, random.randint(20, n-20) , n-1],
-                         [rate, 0.5, 1-rate], kind='linear')
-            for i in range(n):
-                i2s[i] = i2z[i]
-                i1s[i] = shift_t[i] + f(i) * (shift_b[i]-shift_t[i])                   
-        else:
-            rate = (random.uniform(shift_t[0], shift_b[0])-shift_t[0]) / (shift_b[0]-shift_t[0])
-            if big:
-                rate = 0.5 + abs(rate - 0.5)
-            else:
-                rate = 0.5 - abs(rate - 0.5)
-    
-            for i in range(n):
-                i2s[i] = i2z[i]
-                i1s[i] = shift_t[i] + rate * (shift_b[i]-shift_t[i])
-        
-        hrzs_new.append((i1s,i2s))
-        
-    return hrzs_new
 
 def map_hrzs_into_img(hrzs, size, rg=0.6):
     h, w = size
@@ -225,76 +156,6 @@ def remove_hrzs_near_fault(hrzs_img, fals_img):
                         hrzs_img_new[i1,i2] =  0
     return hrzs_img_new
 
-def get_ucert_rg_for_fals(fals,size,pertb=12,pertb_itv=6,stretch_en=1.2,squeeze_en=0.8,sigma=2):
-    h, w = size
-    fals_x,fals_z = [],[]
-
-    for j,fal in enumerate(fals):
-        i1x, i2x = fal
-        fals_x.append((i1x,i2x))  
-
-        f = interp1d([i1x[i] for i in range(0,len(i1x),pertb_itv)], 
-                     [i2x[i] for i in range(0,len(i2x),pertb_itv)], 
-                     fill_value="extrapolate", kind='cubic')
-
-        shift_t,shift_b = np.zeros(h),np.zeros(h)
-
-        for i1 in range(h):  
-            if i1 < h//2:
-                rate = (stretch_en-squeeze_en)*(h//2-i1)/(h//2)+squeeze_en
-            else:
-                rate = (stretch_en-squeeze_en)*(i1-h//2)/(h-1-h//2)+squeeze_en
-            
-            shift_t[i1] = f(i1) - pertb * rate
-            shift_b[i1] = f(i1) + pertb * rate  
-            
-        f_t = interp1d([i for i in range(0,h,pertb_itv)], 
-                       [shift_t[i] for i in range(0,h,pertb_itv)],
-                     fill_value="extrapolate", kind='cubic') 
-        
-        f_b = interp1d([i for i in range(0,h,pertb_itv)], 
-                       [shift_b[i] for i in range(0,h,pertb_itv)],
-                     fill_value="extrapolate", kind='cubic')            
-            
-        fals_z.append((np.linspace(0,h-1,h),
-                       np.array([f_t(i) for i in range(h)]),
-                       np.array([f_b(i) for i in range(h)])))  
-        
-    return fals_x,fals_z
-
-def get_ucert_rg_for_hrzs(hrzs,size,fps,pertb=12,pertb_itv=2,stretch_en=1.7,squeeze_en=0.5,sigma=6):
-    h, w = size
-    hrzs_x,hrzs_z = [],[]
-    for j,hrz in enumerate(hrzs):
-        for i,(i1s, i2s) in enumerate(hrz):
-            if i == 0:
-                i1x,i2x = i1s,i2s
-            else:
-                i1x,i2x = np.append(i1x,i1s),np.append(i2x,i2s)
-
-        hrzs_x.append((i1x,i2x))  
-
-        f = interp1d([i2x[i] for i in range(0,len(i2x),pertb_itv)], 
-                     [i1x[i] for i in range(0,len(i1x),pertb_itv)], 
-                     fill_value="extrapolate", kind='cubic')
-
-        shift_t,shift_b = np.zeros(w),np.zeros(w)  
-        
-        f_r = interp1d([0]+sorted(fps[j])+[w-1], 
-                     [stretch_en]+[squeeze_en for k in range(len(fps[j]))]+[stretch_en], 
-                     fill_value="extrapolate", kind='linear')        
-        
-        for i2 in range(w):
-            rate = f_r(i2)
-            shift_t[i2] = f(i2) - pertb * rate
-            shift_b[i2] = f(i2) + pertb * rate  
-            
-        hrzs_z.append((np.linspace(0,w-1,w),
-                       gaussian_filter(shift_t, sigma=sigma),
-                       gaussian_filter(shift_b, sigma=sigma)))  
-        
-    return hrzs_x,hrzs_z
-
 def find_sect_point(hrzs, fals, size):
     ilst = []
     n = size[-1]
@@ -336,7 +197,6 @@ def find_near_list(a, n=1e1):
     return d
 
 def compute_in_hrzs(fx, hms):          
-    # 计算非网格层位
     hrzs = []
     for hm in hms:
         fm = fx * hm
@@ -387,45 +247,6 @@ def cut_lins_hors(lines):
         hrzs.append([i1s[ib:i+1],i2s[ib:i+1]])
     return hrzs
 
-def compute_hrzs_error(samples, bit, sample_rate, _print=False):
-    merror = np.zeros(len(samples))
-    for i in range(len(samples)):
-        pred = samples[i]['pred'].squeeze()
-        frame = samples[i]['scalar'].squeeze()
-
-        hvs, hms = separate_hrzs(frame, pred, bit, sample_rate)
-        hrzs_f = compute_in_hrzs(frame, hms)
-        hrzs_p = compute_out_hrzs(pred, hvs)
-
-        hrz_error = []
-        for hrz_f in hrzs_f:
-            x_f, y_f = hrz_f
-            e_f = np.ones(len(y_f)) * 1e16
-            for hrz_p in hrzs_p:
-                x_p, y_p = hrz_p
-                for j, y in enumerate(y_f):
-                    ix = np.where(y_p == y)[0]
-                    if len(ix):
-                        tmp = abs(x_p[ix[0]] - x_f[j])
-                        if tmp >= 6.0:
-                            tmp = 1e16
-                        e_f[j] = min(tmp, e_f[j])
-
-            e, c = 0, 0
-            for k in range(len(e_f)):
-                if e_f[k] < 6.0:
-                    e += e_f[k]
-                    c += 1  
-            if c > 0:
-                hrz_error.append(e/c)
-        
-        merror[i] = np.array(hrz_error).mean()
-        if _print:
-            print(f"样本{i}误差:{merror[i]}")
-    if _print:
-        print(f"平均误差:{merror.mean()}") 
-    return merror
-
 def extract_horizon_img2d(ux,uv):
     if isinstance(uv,list):
         uv = np.array(uv)
@@ -448,13 +269,11 @@ def extract_horizon_img2d(ux,uv):
 def separate_hrzs(fx, ux, bit, bit_rate):
 
     hrz_idxs = np.arange(0,bit-1,bit_rate)
-    # 分离层位
     hrzs_g = []
     for hrz_idx in hrz_idxs[1:-1]:
         x, y = np.where((fx*(bit-1) >= hrz_idx - bit_rate/2) & (fx*(bit-1) < hrz_idx + bit_rate/2))
         if len(x):
             hrzs_g.append([x,y])
-    # 单层位遮挡
     hvs,hms = [],[]
     
     for i in range(len(hrzs_g)):
@@ -504,7 +323,6 @@ def extract_hrzs_not_on_grid(rx, hvs):
     return cut_lins_for_each_hrz(hrzs)
 
 def compute_hrzs_not_on_grid(fx, hms):          
-    # 计算非网格层位
     hrzs = []
     for hm in hms:
         fm = fx * hm
@@ -537,49 +355,6 @@ def compute_unqiue_hrzs(frame):
                 i1s.append(np.array(tmp).mean())
         hrzs.append([i1s,i2s])
     return hrzs 
-
-def random_bbox(img_shape, bbox_shape, margin):
-    
-    img_height, img_width = img_shape
-    height, width = bbox_shape
-    ver_margin,hor_margin = margin
-    
-    maxt = img_height - ver_margin - height
-    maxl = img_width - hor_margin - width
-    
-    if ver_margin >= maxt:
-        t = 0
-    else:
-        t = np.random.randint(low = ver_margin, high = maxt)
-        
-    if hor_margin >= maxl:
-        l = 0
-    else:
-        l = np.random.randint(low = hor_margin, high = maxl)
-    
-    h, w = height, width
-
-    return (t, l, h, w)
-
-def bbox2mask(img_shape, bbox_shape, margin, times, mode):
-
-    bboxs = []
-    for i in range(times):
-        bbox = random_bbox(img_shape, bbox_shape, margin)
-        bboxs.append(bbox)
-        
-    height,width = img_shape
-    
-    mask = np.zeros((height, width), np.float32)
-    for bbox in bboxs:
-        h = int(bbox[2] * 0.1) + np.random.randint(int(bbox[2] * 0.2 + 1))                                         
-        w = int(bbox[3] * 0.1) + np.random.randint(int(bbox[3] * 0.2) + 1)
-        
-        if mode == "simple":
-            mask[:, (bbox[1] + w) : (bbox[1] + bbox[3] - w)] = 1.
-        elif mode == "random":
-            mask[(bbox[0] + h) : (bbox[0] + bbox[2] - h), (bbox[1] + w) : (bbox[1] + bbox[3] - w)] = 1.
-    return mask
 
 def mask_horizons_func(z, x, hrz_grp=4, hrz_sel=None, sample_rate=1):
     if hrz_sel is None:
@@ -664,23 +439,6 @@ def get_train_sample_from_rgt(rgt, possible_num_hrzs, hrz_grp,
             else:
                 break
                 
-        if len(x_h) == 0:
-            print(f"data_sample_path:{data_sample_path}")
-            print(f"hrzs_idx:{hrzs_idx}")
-            print(f"hrz_grp:{hrz_grp}")
-            print(f"idx_h:{idx_h}")
-            print(len(x))
-            print(len(x_f))   
-            print(len(x_h))
-            print(f"iter_count:{iter_count}")
-            print(f"max_num_iter:{max_num_iter}")
-            debug_save_path = os.path.join("./DEBUG",data_sample_path.split("/")[-1])
-            if not os.path.exists(debug_save_path):
-                os.makedirs(debug_save_path)
-            np.save(os.path.join(debug_save_path, "gt.npy"), rgt)  
-            np.save(os.path.join(debug_save_path, "fl.npy"), fl) 
-            np.save(os.path.join(debug_save_path, "ux.npy"), ux)  
-    
         mk[x_h,y_h] = 1
         fx[x_h,y_h] = rgt[x_h,y_h]
         if orientation is not None:
