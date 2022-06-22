@@ -37,6 +37,8 @@ pip install -r requirements.txt
 
 **The synthetic structural models can be downloaded from [here](https://doi.org/10.5281/zenodo.6480165), and the input data are randomly generated in training.**
 
+Run training_data_generating.ipynb to create a new synthetic dataset used for training.
+
 ## Training
 
 Run train.ipynb to start training a new DeepISMNet model by using the synthetic dataset.
